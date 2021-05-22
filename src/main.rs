@@ -34,6 +34,7 @@ async fn main() {
         .await
         .unwrap();
 
+    // TODO: Make this concurrent for each Guild
     for guild in guild_info {
         println!("Guild: {}", &guild.name);
         
@@ -46,6 +47,9 @@ async fn main() {
                 if channel.name == "serverboi-servers" {
                     println!("Server Channel - Name: {} | ID: {} ", channel.name, channel.id);
 
+                    // Debug post embed
+                    // post_embed(&channel, &http, "Uncletopia | San Francisco".to_string(), "TF2".to_string(), 0, 0, "23.239.22.163", "27015").await;
+
                     let messages = channel.messages(&http, |retriever| {
                         retriever.limit(200)
                     })
@@ -57,42 +61,33 @@ async fn main() {
 
                         for embed in embeds {
                             let address = get_address_from_embed(embed);
-
                             let server_info = query_server(address);
 
                             if let Some(info) = server_info {
-
                                 let fields = &embed.fields;
-
                                 let message_id = &message.id;
-
                                 let footer = &embed.footer;
-
                                 let time = Utc::now()
                                     .format("%H:%M");
-
                                 println!("{}", time);
 
+                                //Make this more flexible for differing types of embeds / statuses
                                 channel.edit_message(&http, message_id, |msg| {
                                     msg.embed(|e| {
                                         e.colour(Color::BLURPLE);
-
                                         e.title(&embed.title
                                             .as_ref()
                                             .unwrap()
                                         );
-
                                         e.description(&embed.description
                                             .as_ref()
                                             .unwrap()
                                         );
-
                                         let new_footer = format!("{}", &footer.as_ref().unwrap().text);
                                         let new_footer: Vec<&str> = new_footer
                                             .split('|')
                                             .collect();
-                                        let new_footer = format!("{} | {}| 🕒 Pulled at {} UTC", new_footer[0], new_footer[1], time);
-
+                                        let new_footer = format!("{} | {} | 🕒 Pulled at {} UTC", new_footer[0].trim(), new_footer[1].trim(), time);
                                         e.footer(|f|{
                                             f.text(new_footer);
                                             f.icon_url(
@@ -100,7 +95,6 @@ async fn main() {
                                             );
                                             f
                                         });
-
                                         for field in fields {
                                             if field.name == "Players" {
                                                 e.field(&field.name, format!("{}/{}", info.players, info.max_players), true);
@@ -108,7 +102,6 @@ async fn main() {
                                                 e.field(&field.name, &field.value, true);
                                             }
                                         };
-
                                         e.thumbnail("https://i.kym-cdn.com/entries/icons/original/000/022/255/tumblr_inline_o58r6dmSfe1suaed2_500.gif");
                                         e
                                     })
@@ -134,7 +127,7 @@ async fn post_embed(channel: &GuildChannel, http: &Http, server_name: String, ga
             e.description(format!("Connect: steam://connect/{}:{}", ip, port));
             e.thumbnail("https://i.kym-cdn.com/entries/icons/original/000/022/255/tumblr_inline_o58r6dmSfe1suaed2_500.gif");
             e.field("Status", "Test", true);
-            e.field("-", "-", true);
+            e.field("\u{200b}", "\u{200b}", true);
             e.field("Address", format!("`{}:{}`", ip, port), true);
             e.field("Location", "Test", true);
             e.field("Game", format!("{}", game), true);
